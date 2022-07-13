@@ -1,6 +1,9 @@
 package block
 
-import "ProQueries/structs/merkletree/datas"
+import (
+	"ProQueries/structs/merkletree/datas"
+	"github.com/tendermint/tendermint/libs/json"
+)
 
 type Account struct {
 	AcKey   AccountKey `json:"account_key"`   //账户
@@ -68,9 +71,10 @@ func (ac *Account) Isnull() bool {
 }
 
 func (ac *Account) Tobyte() []byte {
-	a := []byte("")
+	a, _ := json.Marshal(ac)
 	return a
 }
+
 func (ac *Account) Getpointer() Pointer {
 
 	return ac.Pointer

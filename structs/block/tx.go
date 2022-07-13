@@ -18,7 +18,7 @@ type Tx struct {
 }
 
 func (tx *Tx) Tobyte() []byte {
-	a := []byte("")
+	a, _ := json.Marshal(tx)
 	return a
 }
 

@@ -1,6 +1,9 @@
 package datas
 
-import "ProQueries/crypto/bls"
+import (
+	"ProQueries/crypto/bls"
+	"github.com/tendermint/tendermint/libs/json"
+)
 
 type Data_All struct {
 	data_content *Data_R
@@ -47,4 +50,9 @@ func (data *Data_All) Sign(msg []byte, privKey bls.PrivKey) {
 	}
 
 	data.data_sign.Sign(msg, privKey)
+}
+
+func (data *Data_All) Tobyte() []byte {
+	a, _ := json.Marshal(data)
+	return a
 }

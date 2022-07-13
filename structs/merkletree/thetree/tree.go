@@ -1,6 +1,7 @@
 package thetree
 
 import (
+	"ProQueries/structs/merkletree/datas"
 	"errors"
 	"fmt"
 	"reflect"
@@ -29,7 +30,7 @@ type Record struct {
 
 type Node struct {
 	Pointers []interface{}
-	Keys     []int
+	Keys     []datas.Data_R
 	Parent   *Node
 	IsLeaf   bool
 	NumKeys  int
@@ -40,7 +41,7 @@ func NewTree() *Tree {
 	return &Tree{}
 }
 
-func (t *Tree) Insert(key int, value []byte) error {
+func (t *Tree) Insert(key datas.Data_R, value []byte) error {
 	var pointer *Record
 	var leaf *Node
 
@@ -67,14 +68,15 @@ func (t *Tree) Insert(key int, value []byte) error {
 	return t.insertIntoLeafAfterSplitting(leaf, key, pointer)
 }
 
-func (t *Tree) Find(key int, verbose bool) (*Record, error) {
+func (t *Tree) Find(key datas.Data_R, verbose bool) (*Record, error) {
 	i := 0
 	c := t.findLeaf(key, verbose)
 	if c == nil {
 		return nil, errors.New("key not found")
 	}
 	for i = 0; i < c.NumKeys; i++ {
-		if c.Keys[i] == key {
+		//if c.Keys[i] == key {
+		if c.Keys[i].Equals(key) {
 			break
 		}
 	}
@@ -87,7 +89,7 @@ func (t *Tree) Find(key int, verbose bool) (*Record, error) {
 	return r, nil
 }
 
-func (t *Tree) FindAndPrint(key int, verbose bool) {
+func (t *Tree) FindAndPrint(key datas.Data_R, verbose bool) {
 	r, err := t.Find(key, verbose)
 
 	if err != nil || r == nil {
@@ -97,24 +99,24 @@ func (t *Tree) FindAndPrint(key int, verbose bool) {
 	}
 }
 
-func (t *Tree) FindAndPrintRange(key_start, key_end int, verbose bool) {
-	var i int
-	array_size := key_end - key_start + 1
-	returned_keys := make([]int, array_size)
-	returned_pointers := make([]interface{}, array_size)
-	num_found := t.findRange(key_start, key_end, verbose, returned_keys, returned_pointers)
-	if num_found == 0 {
-		fmt.Println("None found,")
-	} else {
-		for i = 0; i < num_found; i++ {
-			c, _ := returned_pointers[i].(*Record)
-			fmt.Printf("Key: %d  Location: %d  Value: %s\n",
-				returned_keys[i],
-				returned_pointers[i],
-				c.Value)
-		}
-	}
-}
+//func (t *Tree) FindAndPrintRange(key_start, key_end datas.Data_R, verbose bool) {
+//	var i int
+//	array_size := key_end - key_start + 1
+//	returned_keys := make([]datas.Data_R, array_size)
+//	returned_pointers := make([]interface{}, array_size)
+//	num_found := t.findRange(key_start, key_end, verbose, returned_keys, returned_pointers)
+//	if num_found == 0 {
+//		fmt.Println("None found,")
+//	} else {
+//		for i = 0; i < num_found; i++ {
+//			c, _ := returned_pointers[i].(*Record)
+//			fmt.Printf("Key: %d  Location: %d  Value: %s\n",
+//				returned_keys[i],
+//				returned_pointers[i],
+//				c.Value)
+//		}
+//	}
+//}
 
 func (t *Tree) PrintTree() {
 	var n *Node
@@ -198,7 +200,7 @@ func (t *Tree) PrintLeaves() {
 	fmt.Printf("\n")
 }
 
-func (t *Tree) Delete(key int) error {
+func (t *Tree) Delete(key datas.Data_R) error {
 	key_record, err := t.Find(key, false)
 	if err != nil {
 		return err
@@ -267,32 +269,32 @@ func (t *Tree) pathToRoot(child *Node) int {
 	return length
 }
 
-func (t *Tree) findRange(key_start, key_end int, verbose bool, returned_keys []int, returned_pointers []interface{}) int {
-	var i int
-	num_found := 0
+//func (t *Tree) findRange(key_start, key_end int, verbose bool, returned_keys []datas.Data_R, returned_pointers []interface{}) int {
+//	var i int
+//	num_found := 0
+//
+//	n := t.findLeaf(key_start, verbose)
+//	if n == nil {
+//		return 0
+//	}
+//	for i = 0; i < n.NumKeys && n.Keys[i] < key_start; i++ {
+//		if i == n.NumKeys { // could be wrong
+//			return 0
+//		}
+//	}
+//	for n != nil {
+//		for i = i; i < n.NumKeys && n.Keys[i] <= key_end; i++ {
+//			returned_keys[num_found] = n.Keys[i]
+//			returned_pointers[num_found] = n.Pointers[i]
+//			num_found += 1
+//		}
+//		n, _ = n.Pointers[order-1].(*Node)
+//		i = 0
+//	}
+//	return num_found
+//}
 
-	n := t.findLeaf(key_start, verbose)
-	if n == nil {
-		return 0
-	}
-	for i = 0; i < n.NumKeys && n.Keys[i] < key_start; i++ {
-		if i == n.NumKeys { // could be wrong
-			return 0
-		}
-	}
-	for n != nil {
-		for i = i; i < n.NumKeys && n.Keys[i] <= key_end; i++ {
-			returned_keys[num_found] = n.Keys[i]
-			returned_pointers[num_found] = n.Pointers[i]
-			num_found += 1
-		}
-		n, _ = n.Pointers[order-1].(*Node)
-		i = 0
-	}
-	return num_found
-}
-
-func (t *Tree) findLeaf(key int, verbose bool) *Node {
+func (t *Tree) findLeaf(key datas.Data_R, verbose bool) *Node {
 	i := 0
 	c := t.Root
 	if c == nil {
@@ -311,7 +313,8 @@ func (t *Tree) findLeaf(key int, verbose bool) *Node {
 		}
 		i = 0
 		for i < c.NumKeys {
-			if key >= c.Keys[i] {
+			//if key >= c.Keys[i] {
+			if key.Ishigher(c.Keys[i]) {
 				i += 1
 			} else {
 				break
@@ -358,7 +361,7 @@ func makeNode() (*Node, error) {
 	if new_node == nil {
 		return nil, errors.New("Error: Node creation.")
 	}
-	new_node.Keys = make([]int, order-1)
+	new_node.Keys = make([]datas.Data_R, order-1)
 	if new_node.Keys == nil {
 		return nil, errors.New("Error: New node keys array.")
 	}
@@ -390,10 +393,11 @@ func getLeftIndex(parent, left *Node) int {
 	return left_index
 }
 
-func insertIntoLeaf(leaf *Node, key int, pointer *Record) {
+func insertIntoLeaf(leaf *Node, key datas.Data_R, pointer *Record) {
 	var i, insertion_point int
 
-	for insertion_point < leaf.NumKeys && leaf.Keys[insertion_point] < key {
+	//for insertion_point < leaf.NumKeys && leaf.Keys[insertion_point] < key {
+	for insertion_point < leaf.NumKeys && !leaf.Keys[insertion_point].Ishigher(key) {
 		insertion_point += 1
 	}
 
@@ -407,9 +411,10 @@ func insertIntoLeaf(leaf *Node, key int, pointer *Record) {
 	return
 }
 
-func (t *Tree) insertIntoLeafAfterSplitting(leaf *Node, key int, pointer *Record) error {
+func (t *Tree) insertIntoLeafAfterSplitting(leaf *Node, key datas.Data_R, pointer *Record) error {
 	var new_leaf *Node
-	var insertion_index, split, new_key, i, j int
+	var insertion_index, split, i, j int
+	var new_key datas.Data_R
 	var err error
 
 	new_leaf, err = makeLeaf()
@@ -417,7 +422,7 @@ func (t *Tree) insertIntoLeafAfterSplitting(leaf *Node, key int, pointer *Record
 		return nil
 	}
 
-	temp_keys := make([]int, order)
+	temp_keys := make([]datas.Data_R, order)
 	if temp_keys == nil {
 		return errors.New("Error: Temporary keys array.")
 	}
@@ -427,7 +432,8 @@ func (t *Tree) insertIntoLeafAfterSplitting(leaf *Node, key int, pointer *Record
 		return errors.New("Error: Temporary pointers array.")
 	}
 
-	for insertion_index < order-1 && leaf.Keys[insertion_index] < key {
+	//for insertion_index < order-1 && leaf.Keys[insertion_index] < key {
+	for insertion_index < order-1 && !leaf.Keys[insertion_index].Ishigher(key) {
 		insertion_index += 1
 	}
 
@@ -477,7 +483,7 @@ func (t *Tree) insertIntoLeafAfterSplitting(leaf *Node, key int, pointer *Record
 	return t.insertIntoParent(leaf, new_key, new_leaf)
 }
 
-func insertIntoNode(n *Node, left_index, key int, right *Node) {
+func insertIntoNode(n *Node, left_index int, key datas.Data_R, right *Node) {
 	var i int
 	for i = n.NumKeys; i > left_index; i-- {
 		n.Pointers[i+1] = n.Pointers[i]
@@ -488,10 +494,13 @@ func insertIntoNode(n *Node, left_index, key int, right *Node) {
 	n.NumKeys += 1
 }
 
-func (t *Tree) insertIntoNodeAfterSplitting(old_node *Node, left_index, key int, right *Node) error {
-	var i, j, split, k_prime int
+func (t *Tree) insertIntoNodeAfterSplitting(old_node *Node, left_index int, key datas.Data_R, right *Node) error {
+	//var i, j, split, k_prime int
+	var i, j, split int
+	var k_prime datas.Data_R
 	var new_node, child *Node
-	var temp_keys []int
+	//var temp_keys []int
+	var temp_keys []datas.Data_R
 	var temp_pointers []interface{}
 	var err error
 
@@ -500,7 +509,7 @@ func (t *Tree) insertIntoNodeAfterSplitting(old_node *Node, left_index, key int,
 		return errors.New("Error: Temporary pointers array for splitting nodes.")
 	}
 
-	temp_keys = make([]int, order)
+	temp_keys = make([]datas.Data_R, order)
 	if temp_keys == nil {
 		return errors.New("Error: Temporary keys array for splitting nodes.")
 	}
@@ -555,7 +564,7 @@ func (t *Tree) insertIntoNodeAfterSplitting(old_node *Node, left_index, key int,
 	return t.insertIntoParent(old_node, k_prime, new_node)
 }
 
-func (t *Tree) insertIntoParent(left *Node, key int, right *Node) error {
+func (t *Tree) insertIntoParent(left *Node, key datas.Data_R, right *Node) error {
 	var left_index int
 	parent := left.Parent
 
@@ -572,7 +581,7 @@ func (t *Tree) insertIntoParent(left *Node, key int, right *Node) error {
 	return t.insertIntoNodeAfterSplitting(parent, left_index, key, right)
 }
 
-func (t *Tree) insertIntoNewRoot(left *Node, key int, right *Node) error {
+func (t *Tree) insertIntoNewRoot(left *Node, key datas.Data_R, right *Node) error {
 	t.Root, err = makeNode()
 	if err != nil {
 		return err
@@ -587,7 +596,7 @@ func (t *Tree) insertIntoNewRoot(left *Node, key int, right *Node) error {
 	return nil
 }
 
-func (t *Tree) startNewTree(key int, pointer *Record) error {
+func (t *Tree) startNewTree(key datas.Data_R, pointer *Record) error {
 	t.Root, err = makeLeaf()
 	if err != nil {
 		return err
@@ -612,7 +621,7 @@ func getNeighbourIndex(n *Node) int {
 	return i
 }
 
-func removeEntryFromNode(n *Node, key int, pointer interface{}) *Node {
+func removeEntryFromNode(n *Node, key datas.Data_R, pointer interface{}) *Node {
 	var i, num_pointers int
 
 	for n.Keys[i] != key {
@@ -669,7 +678,7 @@ func (t *Tree) adjustRoot() {
 	return
 }
 
-func (t *Tree) coalesceNodes(n, neighbour *Node, neighbour_index, k_prime int) {
+func (t *Tree) coalesceNodes(n, neighbour *Node, neighbour_index int, k_prime datas.Data_R) {
 	var i, j, neighbour_insertion_index, n_end int
 	var tmp *Node
 
@@ -713,7 +722,7 @@ func (t *Tree) coalesceNodes(n, neighbour *Node, neighbour_index, k_prime int) {
 	t.deleteEntry(n.Parent, k_prime, n)
 }
 
-func (t *Tree) redistributeNodes(n, neighbour *Node, neighbour_index, k_prime_index, k_prime int) {
+func (t *Tree) redistributeNodes(n, neighbour *Node, neighbour_index, k_prime_index int, k_prime datas.Data_R) {
 	var i int
 	var tmp *Node
 
@@ -764,8 +773,10 @@ func (t *Tree) redistributeNodes(n, neighbour *Node, neighbour_index, k_prime_in
 	return
 }
 
-func (t *Tree) deleteEntry(n *Node, key int, pointer interface{}) {
-	var min_keys, neighbour_index, k_prime_index, k_prime, capacity int
+func (t *Tree) deleteEntry(n *Node, key datas.Data_R, pointer interface{}) {
+	//var min_keys, neighbour_index, k_prime_index, k_prime, capacity int
+	var min_keys, neighbour_index, k_prime_index, capacity int
+	var k_prime datas.Data_R
 	var neighbour *Node
 
 	n = removeEntryFromNode(n, key, pointer)
