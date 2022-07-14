@@ -1,6 +1,7 @@
 package block
 
 import (
+	"ProQueries/structs/merkletree/datas"
 	"fmt"
 	"github.com/tendermint/tendermint/libs/json"
 	"math/rand"
@@ -10,6 +11,11 @@ import (
 func GetAcconutKey(i int) *AccountKey {
 	key := NewAccountKey(i)
 	return key
+}
+
+type All struct {
+	data_content *Account      `json:"dataR"` //值
+	data_sign    *datas.Data_S `json:"dataS"` //加密
 }
 
 func TestTx(t *testing.T) {
@@ -42,4 +48,17 @@ func Test(t *testing.T) {
 	fmt.Println(str)
 	fmt.Println(str2)
 	fmt.Println(str == str2)
+}
+
+func TestToByte(t *testing.T) {
+	account := NewAcconunt(*NewAccountKey(1), 0, Pointers{})
+	//acc := account.(datas.Data_R)
+	key := datas.NewDataR(account)
+	va1 := datas.NewDataAll(key)
+	value := va1.Tobyte()
+
+	str := string(value)
+	var va datas.Data_All
+	err := json.Unmarshal([]byte(str), &va)
+	fmt.Println(str, err)
 }

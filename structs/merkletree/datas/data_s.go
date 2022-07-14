@@ -2,12 +2,14 @@ package datas
 
 import (
 	bls2 "ProQueries/crypto/bls"
-	"crypto/sha1"
+	"crypto/sha256"
+	"github.com/tendermint/tendermint/libs/json"
 	"io"
 )
 
 type Data_S struct {
-	data_content []byte
+	data_content []byte `json:"dataS"` //加密
+
 }
 
 func (data Data_S) Showsign() []byte {
@@ -39,8 +41,13 @@ func NewdataS(sign []byte) *Data_S {
 }
 
 func (data *Data_S) Hashsign(msg []byte) []byte {
-	h := sha1.New()
+	h := sha256.New()
 	io.WriteString(h, string(msg))
 	data.data_content = h.Sum(nil)
 	return data.data_content
+}
+
+func (data *Data_S) Tobyte() []byte {
+	a, _ := json.Marshal(data)
+	return a
 }

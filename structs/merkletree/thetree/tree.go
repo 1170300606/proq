@@ -2,6 +2,7 @@ package thetree
 
 import (
 	"ProQueries/structs/merkletree/datas"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"reflect"
@@ -25,27 +26,73 @@ type Tree struct {
 }
 
 type Record struct {
-	Value []byte
+	Value datas.Data_All
 }
 
 type Node struct {
-	Pointers []interface{}
-	Keys     []datas.Data_R
-	Parent   *Node
-	IsLeaf   bool
-	NumKeys  int
-	Next     *Node
+	Pointers  []interface{}
+	Keys      []datas.Data_R
+	Parent    *Node
+	IsLeaf    bool
+	NumKeys   int
+	Next      *Node
+	data_sign []byte
 }
 
 func NewTree() *Tree {
 	return &Tree{}
 }
 
-func (t *Tree) Insert(key datas.Data_R, value []byte) error {
+func (t *Tree) SignAll() {
+	//h := sha256.New()
+	t.Root.Sign()
+}
+
+func (t *Node) Sign() []byte {
+	h := sha256.New()
+	if !t.IsLeaf {
+		for i := 0; i < t.NumKeys; i++ {
+			s := t.Pointers[i].(*Node).Sign()
+			h.Write(s)
+		}
+		a := h.Sum(nil)
+		t.data_sign = a
+		return a
+	} else {
+		for i := 0; i < t.NumKeys; i++ {
+			s := t.Pointers[i].(*Record).Sign()
+			h.Write(s)
+		}
+		a := h.Sum(nil)
+		t.data_sign = a
+		return a
+	}
+	return nil
+}
+
+func (t *Node) ShowSign() []byte {
+	return t.data_sign
+}
+
+func (t *Record) Sign() []byte {
+	//h := sha256.New()
+	//s, err := json.Marshal(t.Value.Showdata())
+	//if err != nil {
+	//	fmt.Println("生成json字符串错误")
+	//}
+	////str := string(s)
+	////io.WriteString(h, s)
+	//h.Write(s)
+	//a := h.Sum(nil)
+	//t.Value.Signs()
+	return t.Value.Signs()
+}
+
+func (t *Tree) Insert(key datas.Data_R, value datas.Data_All) error {
 	var pointer *Record
 	var leaf *Node
 
-	if _, err := t.Find(key, false); err == nil {
+	if _, err, _ := t.Find(key, false); err == nil {
 		return errors.New("key already exists")
 	}
 
@@ -68,11 +115,11 @@ func (t *Tree) Insert(key datas.Data_R, value []byte) error {
 	return t.insertIntoLeafAfterSplitting(leaf, key, pointer)
 }
 
-func (t *Tree) Find(key datas.Data_R, verbose bool) (*Record, error) {
+func (t *Tree) Find(key datas.Data_R, verbose bool) (*Record, error, *Node) {
 	i := 0
 	c := t.findLeaf(key, verbose)
 	if c == nil {
-		return nil, errors.New("key not found")
+		return nil, errors.New("key not found"), c
 	}
 	for i = 0; i < c.NumKeys; i++ {
 		//if c.Keys[i] == key {
@@ -81,21 +128,22 @@ func (t *Tree) Find(key datas.Data_R, verbose bool) (*Record, error) {
 		}
 	}
 	if i == c.NumKeys {
-		return nil, errors.New("key not found")
+		return nil, errors.New("key not found"), c
 	}
 
 	r, _ := c.Pointers[i].(*Record)
 
-	return r, nil
+	return r, nil, c
 }
 
 func (t *Tree) FindAndPrint(key datas.Data_R, verbose bool) {
-	r, err := t.Find(key, verbose)
+	r, err, _ := t.Find(key, verbose)
 
 	if err != nil || r == nil {
 		fmt.Printf("Record not found under key %d.\n", key)
 	} else {
-		fmt.Printf("Record at %d -- key %d, value %s.\n", r, key, r.Value)
+		//fmt.Printf("Record at %d -- key %s, value %s.\n", r, key, r.Value.ToStr())
+		fmt.Println("Record at", r, "key:", key, "value:", r.Value.ToStr())
 	}
 }
 
@@ -201,7 +249,7 @@ func (t *Tree) PrintLeaves() {
 }
 
 func (t *Tree) Delete(key datas.Data_R) error {
-	key_record, err := t.Find(key, false)
+	key_record, err, _ := t.Find(key, false)
 	if err != nil {
 		return err
 	}
@@ -346,7 +394,7 @@ func cut(length int) int {
 //
 //	INSERTION
 //
-func makeRecord(value []byte) (*Record, error) {
+func makeRecord(value datas.Data_All) (*Record, error) {
 	new_record := new(Record)
 	if new_record == nil {
 		return nil, errors.New("Error: Record creation.")
@@ -624,7 +672,8 @@ func getNeighbourIndex(n *Node) int {
 func removeEntryFromNode(n *Node, key datas.Data_R, pointer interface{}) *Node {
 	var i, num_pointers int
 
-	for n.Keys[i] != key {
+	//for n.Keys[i] != key {
+	for !n.Keys[i].Equals(key) {
 		i += 1
 	}
 

@@ -2,7 +2,7 @@ package datas
 
 type Data_R struct {
 	//data_content block.Account
-	data_content Content
+	data_content Content `json:"dataR"` //值
 }
 
 func NewnullDataR() *Data_R {
@@ -64,5 +64,5 @@ func (data *Data_R) Equals(data_2 Data_R) bool {
 }
 
 func (data *Data_R) Tobyte() []byte {
-	return []byte("")
+	return data.data_content.Tobyte()
 }
