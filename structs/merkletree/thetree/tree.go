@@ -51,7 +51,9 @@ func (t *Tree) SignAll() {
 func (t *Node) Sign() []byte {
 	h := sha256.New()
 	if !t.IsLeaf {
-		for i := 0; i < t.NumKeys; i++ {
+		// TODO Numkeys 是干什么的
+		for i := 0; i <= t.NumKeys; i++ {
+			//for i := 0; i < len(t.Pointers); i++ {
 			s := t.Pointers[i].(*Node).Sign()
 			h.Write(s)
 		}
@@ -60,6 +62,7 @@ func (t *Node) Sign() []byte {
 		return a
 	} else {
 		for i := 0; i < t.NumKeys; i++ {
+			//for i := 0; i < len(t.Pointers); i++ {
 			s := t.Pointers[i].(*Record).Sign()
 			h.Write(s)
 		}
@@ -198,6 +201,7 @@ func (t *Tree) PrintTree() {
 				fmt.Printf("%d ", n.Keys[i])
 			}
 			if !n.IsLeaf {
+				//TODO 注意：下面这里用的是"<="
 				for i = 0; i <= n.NumKeys; i++ {
 					c, _ := n.Pointers[i].(*Node)
 					enqueue(c)
@@ -875,4 +879,56 @@ func (t *Tree) deleteEntry(n *Node, key datas.Data_R, pointer interface{}) {
 		return
 	}
 
+}
+
+func (t *Tree) MakeVo(r *Record, node *Node) *Vo2 {
+	var node_temp, node_last *Node
+	node_last = &Node{}
+	node_temp = node
+	c := node
+	var i int
+	for i = 0; i < c.NumKeys; i++ {
+		//if c.Keys[i] == key {
+		if c.Keys[i].Equals(*r.Value.Showdata()) {
+			break
+		}
+	}
+	if i == c.NumKeys {
+		return nil
+	}
+	var node2, vonode, vonode_last *Vonode2
+
+	for node_temp != nil {
+		if node_temp.IsLeaf { //是叶子节点
+			vonode = MallocNewVonode2(node_temp.NumKeys, node_temp.IsLeaf)
+			var hashs [][]byte
+			for i := 0; i < node_temp.NumKeys; i++ {
+				hashs = append(hashs, node_temp.Pointers[i].(*Record).Value.Show_sign())
+			}
+			vonode.Sethash(node_temp.ShowSign())
+			vonode.Setleafs(hashs)
+			node2 = vonode
+			vonode_last = vonode
+		} else { //非叶子节点
+			var nodes []*Vonode2
+			//TODO "<="?
+			for i := 0; i <= node_temp.NumKeys; i++ {
+				vonode = MallocNewVonode2(node_temp.NumKeys+1, node_temp.IsLeaf)
+				if node_temp.Pointers[i].(*Node) == node_last {
+					nodes = append(nodes, vonode_last)
+				} else {
+					vonode1 := MallocNewVonode2(0, node_temp.IsLeaf)
+					vonode1.Sethash(node_temp.Pointers[i].(*Node).ShowSign())
+					nodes = append(nodes, vonode1)
+				}
+				vonode.Sethash(node_temp.ShowSign())
+				vonode.SetChildren(nodes)
+			}
+		}
+		vonode_last = vonode
+		node_last = node_temp
+		node_temp = node_temp.Parent
+	}
+	vo := MallocVo(vonode.Gethash(), vonode, node2, i)
+	return vo
 }

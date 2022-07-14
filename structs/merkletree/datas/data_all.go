@@ -29,6 +29,11 @@ func (data *Data_All) Showsign() []byte {
 	return data.data_sign.Showsign()
 }
 
+func (data *Data_All) Show_sign() []byte {
+
+	return data.data_sign.Showsign()
+}
+
 func (data *Data_All) Getds() Data_S {
 	return *data.data_sign
 }

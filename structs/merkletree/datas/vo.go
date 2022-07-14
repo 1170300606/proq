@@ -2,6 +2,7 @@ package datas
 
 import (
 	"crypto/sha1"
+	"crypto/sha256"
 	"io"
 )
 
@@ -55,7 +56,7 @@ func (vo *Vonode) Setleaf(data []*Data_All) {
 }
 
 func (vo *Vonode) Gethash() []byte {
-	h := sha1.New()
+	h := sha256.New()
 	if vo.hash == nil {
 
 		if vo.leafNode == nil {

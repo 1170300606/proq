@@ -535,6 +535,50 @@ func TestSign(t *testing.T) {
 
 }
 
+func TestVo(t *testing.T) {
+	tree := NewTree()
+	for i := 100; i > 0; i-- {
+		//key := i
+		//value := []byte("test")
+		account := block.NewAcconunt(*block.NewAccountKey(i), 0, block.Pointers{})
+		key := datas.NewDataR(account)
+		value := datas.NewDataAll(key)
+		//fmt.Println(i)
+		err := tree.Insert(*key, *value)
+		if err != nil {
+			t.Errorf("%s", err)
+		}
+
+		r, err, _ := tree.Find(*key, false)
+		if err != nil {
+			t.Errorf("%s\n", err)
+		}
+
+		if r == nil {
+			t.Errorf("returned nil \n")
+		}
+
+		//if !reflect.DeepEqual(r.Value, value) {
+		//if !reflect.DeepEqual(r.Value, value) {
+		if !r.Value.Equals(value) {
+			t.Errorf("expected %v and got %v \n", value, r.Value)
+		}
+	}
+	tree.SignAll()
+	account := block.NewAcconunt(*block.NewAccountKey(9), 0, block.Pointers{})
+	key := datas.NewDataR(account)
+	r, error, node := tree.Find(*key, false)
+	if error != nil {
+		t.Errorf("%s\n", err)
+	}
+	vo := tree.MakeVo(r, node)
+	ver := vo.Verifiable()
+	if !ver {
+		t.Errorf("vo is not true")
+	}
+
+}
+
 func TestAll(t *testing.T) {
 	account := block.NewAcconunt(*block.NewAccountKey(1), 0, block.Pointers{})
 	//acc := account.(datas.Data_R)
