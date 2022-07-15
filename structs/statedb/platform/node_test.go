@@ -30,9 +30,9 @@ func TestFind(t *testing.T) {
 	node.NewState()
 	block_ := node.NewBlock()
 	txs := block_.Datas.Txs
-	_, b := node.FindState(*block.NewAcconunt(txs[0].To, 0, block.Pointers{}))
-	if !b {
-		t.Errorf("wrong")
+	_, err, _ := node.FindState(*block.NewAcconunt(txs[0].To, 0, block.Pointers{}))
+	if err != nil {
+		t.Errorf("%s", err)
 	}
 }
 
@@ -45,18 +45,18 @@ func TestDb(t *testing.T) {
 		//acc := account.(datas.Data_R)
 		r := datas.NewDataR(account)
 		all := datas.NewDataAll(r)
-		db.Insert(*r, all)
+		db.Insert(*r, *all)
 	}
 }
 
 func TestPool(t *testing.T) {
 	r := NewRander(0, 100)
 	txs := r.RandTxs(100)
-	txpool := block.NewTxspool()
+	txpool := statedb.NewTxspool()
 	for i := 0; i < len(txs); i++ {
 		//fmt.Println(i)
 		r, all := makeTxPoint(txs[i])
-		txpool.Insert(*r, all)
+		txpool.Insert(*r, *all)
 	}
 }
 

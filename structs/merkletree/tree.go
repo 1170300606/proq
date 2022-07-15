@@ -1,4 +1,4 @@
-package thetree
+package merkletree
 
 import (
 	"ProQueries/structs/merkletree/datas"
@@ -29,6 +29,16 @@ type Record struct {
 	Value datas.Data_All
 }
 
+func MallocRecord(Value datas.Data_All) *Record {
+	return &Record{
+		Value: Value,
+	}
+}
+
+func (r *Record) Change(data datas.Data_All) {
+	r.Value = data
+}
+
 type Node struct {
 	Pointers  []interface{}
 	Keys      []datas.Data_R
@@ -41,6 +51,11 @@ type Node struct {
 
 func NewTree() *Tree {
 	return &Tree{}
+}
+
+func (t *Tree) GetRootHash() []byte {
+	//h := sha256.New()
+	return t.Root.ShowSign()
 }
 
 func (t *Tree) SignAll() {

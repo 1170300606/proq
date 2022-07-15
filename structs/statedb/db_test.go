@@ -16,6 +16,6 @@ func TestDb(t *testing.T) {
 		//acc := account.(datas.Data_R)
 		r := datas.NewDataR(account)
 		all := datas.NewDataAll(r)
-		db.Insert(*r, all)
+		db.Insert(*r, *all)
 	}
 }

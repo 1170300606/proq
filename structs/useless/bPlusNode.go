@@ -1,4 +1,4 @@
-package merkletree
+package useless
 
 import (
 	"ProQueries/structs/merkletree/datas"

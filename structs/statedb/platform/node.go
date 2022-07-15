@@ -23,7 +23,7 @@ type Node struct {
 	r          *Rander
 	Height     int // 当前块高度
 	lastBkHash []byte
-	Pool       *block.Txspool
+	Pool       *statedb.Txspool
 }
 
 /*
@@ -35,7 +35,7 @@ func NewNode() *Node {
 	var blocks []block.ProBlock
 	r := NewRander(0, N)
 	var lastBkHash []byte
-	pool := block.NewTxspool()
+	pool := statedb.NewTxspool()
 	node := &Node{
 		db:         db,
 		Blocks:     blocks,
@@ -87,7 +87,7 @@ func (node *Node) NewBlock() *block.ProBlock {
 }
 
 func (node *Node) NewPool() {
-	node.Pool = block.NewTxspool()
+	node.Pool = statedb.NewTxspool()
 }
 
 /*
@@ -99,7 +99,7 @@ func (node *Node) NewState() {
 		//acc := account.(datas.Data_R)
 		r := datas.NewDataR(account)
 		all := datas.NewDataAll(r)
-		node.db.Insert(*r, all)
+		node.db.Insert(*r, *all)
 	}
 }
 
@@ -112,7 +112,7 @@ func (node *Node) NewStateby(num int) {
 		//acc := account.(datas.Data_R)
 		r := datas.NewDataR(account)
 		all := datas.NewDataAll(r)
-		node.db.Insert(*r, all)
+		node.db.Insert(*r, *all)
 	}
 }
 
@@ -146,7 +146,7 @@ func (node *Node) NewDatas(txs block.Txs) block.Txs {
 		//	i = 34
 		//}
 		r, all := makeTxPoint(txs[i])
-		node.Pool.Insert(*r, all)
+		node.Pool.Insert(*r, *all)
 	}
 	node.Pool.Signall()
 	//datas := block.NewBasicDatas(txs, nil)
@@ -191,38 +191,44 @@ func (node *Node) NewHeader(hash []byte) *block.BasicHeader {
 }
 
 //由于是模拟，只有一个节点，该节点既是查询发出的轻节点又是负责查询的全节点
-func (node *Node) Backward(key block.AccountKey) (block.Txs, datas.Vo) {
+func (node *Node) Backward(key block.AccountKey) (block.Txs, merkletree.Vo2) {
 	//TODO
 	txs, vo := node.linQuery(key)
 	return txs, vo
 }
 
-func (node *Node) Insert(Key datas.Data_R, data *datas.Data_All) (*merkletree.BPlusFullNode, bool) {
+func (node *Node) Insert(Key datas.Data_R, data datas.Data_All) error {
 	return node.db.Insert(Key, data)
 }
 
-func (node *Node) Delete(Key datas.Data_R) (*merkletree.BPlusFullNode, bool) {
+func (node *Node) Delete(Key datas.Data_R) error {
 	return node.db.Delete(Key)
 }
 
-func (node *Node) FindState(Key block.Account) (*datas.Data_All, bool) {
+func (node *Node) FindState(Key block.Account) (*datas.Data_All, error, *merkletree.Node) {
 	key := datas.NewDataR(&Key)
 	return node.db.Find(*key)
 }
 
 //验证用的vo应该是交易默克尔树的Vo,而不是状态数据库默克尔树的Vo
-func (node *Node) linQuery(key block.AccountKey) (block.Txs, datas.Vo) {
+func (node *Node) linQuery(key block.AccountKey) (block.Txs, merkletree.Vo2) {
 	//TODO
 	var txs block.Txs
-	tempAccount := datas.NewDataR(block.NewAcconunt(key, 0, block.Pointers{}))
-	all, _ := node.db.Find(*tempAccount)
+	tempAccount := block.NewAcconunt(key, 0, block.Pointers{})
+	all, _, _ := node.FindState(*tempAccount)
 	Account := all.Showdata().Showdata().(*block.Account)
 	po := Account.Pointer
 
 	tx := node.gettx(po)
 	//TODO Vo 没过去
 	t1 := time2.Now()
-	vo := node.db.RangeQUery(*tempAccount, *tempAccount)
+	//vo := node.db.RangeQUery(*tempAccount, *tempAccount)
+	data, err, thenode := node.FindState(*tempAccount)
+	if err != nil {
+		fmt.Printf("error: %s\n\n", err)
+	}
+	re := merkletree.MallocRecord(*data)
+	vo := node.db.MakeVo(re, thenode)
 	elapsed := time2.Since(t1)
 
 	fmt.Println("建立Vo的时间是：", elapsed)
@@ -245,7 +251,7 @@ func (node *Node) linQuery(key block.AccountKey) (block.Txs, datas.Vo) {
 	fmt.Println("查找txs的时间是：", elapsed)
 	//vo := node.Pool.RangeQUery(*tempAccount,*tempAccount)
 
-	return txs, vo
+	return txs, *vo
 }
 
 func (node *Node) gettx(po block.Pointer) *block.Tx {
